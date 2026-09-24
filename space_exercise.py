@@ -1,57 +1,29 @@
+
 import random
 import time
 
 
-# ============================================================
-# PART 1 — Classify Space Complexity
-# For each function, fill in the Space O and explain why.
-# ============================================================
-
 def reverse_string(s):
     return s[::-1]
-# TODO: What is the space complexity of reverse_string? Why?
-# Space O: 0(n) Linear Space
-# Reason: A new string is created.
-
 
 def count_letters(text):
     freq = {}
     for ch in text:
         freq[ch] = freq.get(ch, 0) + 1
     return freq
-# TODO: What is the space complexity of count_letters? Why?
-#       Hint: the dict grows based on how many UNIQUE characters appear.
-# Space O: O(1)- Constant Space 
-# Reason: There are only 2 variables.
-
 
 def matrix_identity(n):
     matrix = [[0] * n for _ in range(n)]
     for i in range(n):
         matrix[i][i] = 1
     return matrix
-# TODO: What is the space complexity of matrix_identity? Why?
-# Space O: O(n2)- Quadratic Space
-# Reason: The work multiplies based on input.
-
 
 def running_sum(numbers):
     total = 0
     for x in numbers:
         total += x
     return total
-# TODO: What is the space complexity of running_sum? Why?
-#       Hint: how many variables does this function create, regardless of input size?
-# Space O: O(1)-Constant Space
-# Reason: There is no change in memory usage. It remains constant.
 
-
-# ============================================================
-# PART 2 — Duplicate Email Detection
-# Implement both approaches, then answer the RAM question below.
-# ============================================================
-
-# --- Sample data ---
 NUM_EMAILS = 10_000
 random.seed(42)
 domains = ["gmail.com", "yahoo.com", "outlook.com", "company.com"]
@@ -60,19 +32,16 @@ _dupes        = random.choices(unique_emails, k=2_000)
 all_emails    = unique_emails + _dupes
 random.shuffle(all_emails)
 
-
-# ---- Approach 1: Set-based -----------------------------------------------
-# Time:  O(n)   — one pass; set add/lookup are O(1) average
-# Space: O(n)   — the set can hold up to n email strings
 def find_duplicates_set(emails):
     """Return a set of email addresses that appear more than once.
 
-    Uses O(n) extra space (a 'seen' set + a 'duplicates' set).
+    Space: O(u) extra space, where u is the number of UNIQUE email
+    addresses encountered (not the total number processed, n).
+    `seen` grows to at most u entries; `duplicates` grows to at most
+    d entries (d = number of unique addresses that repeat, d <= u).
+    Feeding this the same u addresses many more times (larger n)
+    would not grow memory use, since u stays fixed.
     """
-    # TODO: Implement using two sets: 'seen' and 'duplicates'.
-    # Loop through emails once. If an email is already in 'seen', add it
-    # to 'duplicates'. Otherwise add it to 'seen'. Return 'duplicates'.
-    
     seen = set()
     duplicates = set()
 
@@ -84,37 +53,24 @@ def find_duplicates_set(emails):
     return duplicates
 
 
-# ---- Approach 2: Sort-and-scan -------------------------------------------
-# Time:  O(n log n) — dominated by the sort step
-# Space: O(1) extra — no hash table, just scan adjacent sorted elements
 def find_duplicates_sort(emails):
     """Return a set of email addresses that appear more than once.
 
-    Uses O(1) extra space (beyond the sorted copy Python must create).
+    Space: O(n) extra space, NOT O(1). sorted() always allocates a
+    new list holding references to all n input elements -- it never
+    sorts in place -- so `sorted_emails` alone costs O(n). On top of
+    that, `duplicates` costs O(d), where d is the number of unique
+    duplicate keys found (d <= n). True O(1) extra space would
+    require emails.sort() (in-place, destructive) instead, and even
+    then `duplicates` would still be O(d).
     """
-    # TODO: Implement by:
-    # 1. sorted_emails = sorted(emails)
-    # 2. Loop from index 1 to the end.
-    # 3. If sorted_emails[i] == sorted_emails[i - 1], it's a duplicate.
-    # 4. Return a set of all duplicates found.
-    
     sorted_emails = sorted(emails)
     duplicates = set()
 
     for i in range(1, len(sorted_emails)):
-        if sorted_emails[i] == sorted_emails[i - 1]: 
+        if sorted_emails[i] == sorted_emails[i - 1]:
             duplicates.add(sorted_emails[i])
-    return duplicates 
-    
-
-# ============================================================
-# TODO: Answer this question as a comment below.
-# Which approach would you choose if you only had 4 GB of RAM?
-# Which would you choose if you had 64 GB?
-# Why?
-# ============================================================
-# 4 GB RAM  → I would choose 0(1) because with less RAM you have to prioritize space over speed.
-# 64 GB RAM → I would choose 0(n) because you have enough RAM to that space wouldnt be an issue and you can focus on the time.
+    return duplicates
 
 
 def benchmark(func, data, label):
@@ -136,3 +92,15 @@ if __name__ == "__main__":
     print(f"  Sort+scan       : {len(dupes_sort) if dupes_sort else 'not implemented':>5} duplicates  {t_sort:.3f} ms")
     if dupes_set and dupes_sort:
         print(f"  Both agree      : {dupes_set == dupes_sort}")
+
+    # Rough memory notes (10,000 emails, ~8,000 unique, ~2,000 duplicates):
+    #   Set approach : ~8,000 set entries (seen) + ~2,000 set entries
+    #                  (duplicates), ~50-70 bytes/entry -> ~500-700 KB
+    #   Sort approach: 10,000-element list of pointers (~8 bytes each,
+    #                  ~80 KB) + ~2,000 set entries (~100-140 KB)
+    #                  -> ~180-220 KB total
+    # Despite O(u) "looking smaller" than O(n), the sort approach uses
+    # less RAM here because a list of pointers is far cheaper per
+    # element than a hash set's per-entry overhead.
+
+
